@@ -5,69 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Pessoa</title>
   <style>
-    * {
-      font-family: Arial, sans-serif;
-      box-sizing: border-box;
-    }
-    body {
-      text-align: center;
-      background-color: #f4f4f4;
-      padding: 20px;
-    }
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-    }
-    .modal-content {
-      background-color: white;
-      margin: 10% auto;
-      padding: 20px;
-      width: 80%;
-      max-width: 400px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    }
-    .close {
-      float: right;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    .close:hover {
-      color: red;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+    * { font-family: Arial, sans-serif; box-sizing: border-box; }
+    body { text-align: center; background-color: #f4f4f4; padding: 20px; }
+    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+    button { background: #007bff; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; }
+    button:hover { background: #0056b3; }
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: white; margin: 10% auto; padding: 20px; width: 80%; max-width: 400px; border-radius: 8px; }
+    .close { float: right; font-size: 20px; cursor: pointer; }
+    .close:hover { color: red; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -104,9 +51,24 @@
           <input type="number" id="salarioLiquido" step="0.01" readonly>
         </div>
 
+        <div id="pagamentosDiv" style="display: none;">
+          <label for="numPagamentos">Quantas vezes recebe no mês?</label>
+          <select id="numPagamentos" onchange="gerarCamposPagamento()">
+            <option value="1">1 vez</option>
+            <option value="2">2 vezes</option>
+          </select>
+        </div>
+
         <div id="diasPagamentoDiv" style="display: none;">
-          <label for="dataPagamento">Dia de Recebimento:</label>
-          <input type="date" id="dataPagamento">
+          <label for="dataPagamento1">Dia de Recebimento:</label>
+          <input type="date" id="dataPagamento1">
+          <div id="parcelaPagamento1"></div>
+
+          <div id="dataPagamento2Div" style="display: none;">
+            <label for="dataPagamento2">Segunda Data de Pagamento:</label>
+            <input type="date" id="dataPagamento2">
+            <div id="parcelaPagamento2"></div>
+          </div>
         </div>
 
         <button type="submit">Salvar</button>
@@ -127,15 +89,18 @@
       var tipoContrato = document.getElementById('tipoContrato').value;
       var salarioBrutoDiv = document.getElementById('salarioBrutoDiv');
       var salarioLiquidoDiv = document.getElementById('salarioLiquidoDiv');
+      var pagamentosDiv = document.getElementById('pagamentosDiv');
       var diasPagamentoDiv = document.getElementById('diasPagamentoDiv');
 
       if (tipoContrato === 'CLT') {
         salarioBrutoDiv.style.display = 'block';
         salarioLiquidoDiv.style.display = 'block';
+        pagamentosDiv.style.display = 'block';
         diasPagamentoDiv.style.display = 'block';
       } else {
         salarioBrutoDiv.style.display = 'none';
         salarioLiquidoDiv.style.display = 'none';
+        pagamentosDiv.style.display = 'none';
         diasPagamentoDiv.style.display = 'none';
       }
     }
@@ -143,8 +108,30 @@
     function calcularSalarioLiquido() {
       var salarioBruto = parseFloat(document.getElementById('salario').value);
       if (!isNaN(salarioBruto)) {
-        var salarioLiquido = salarioBruto * 0.8; // Exemplo: 80% do salário bruto
+        var salarioLiquido = salarioBruto * 0.8;
         document.getElementById('salarioLiquido').value = salarioLiquido.toFixed(2);
+        gerarCamposPagamento();
+      }
+    }
+
+    function gerarCamposPagamento() {
+      var numPagamentos = document.getElementById('numPagamentos').value;
+      var salarioLiquido = parseFloat(document.getElementById('salarioLiquido').value);
+      var dataPagamento2Div = document.getElementById('dataPagamento2Div');
+      var parcelaPagamento1 = document.getElementById('parcelaPagamento1');
+      var parcelaPagamento2 = document.getElementById('parcelaPagamento2');
+
+      if (!isNaN(salarioLiquido)) {
+        if (numPagamentos == 1) {
+          dataPagamento2Div.style.display = 'none';
+          parcelaPagamento1.innerHTML = `Valor recebido: R$ ${salarioLiquido.toFixed(2)}`;
+          parcelaPagamento2.innerHTML = "";
+        } else {
+          dataPagamento2Div.style.display = 'block';
+          var valorParcela = salarioLiquido / 2;
+          parcelaPagamento1.innerHTML = `Valor recebido na 1ª data: R$ ${valorParcela.toFixed(2)}`;
+          parcelaPagamento2.innerHTML = `Valor recebido na 2ª data: R$ ${valorParcela.toFixed(2)}`;
+        }
       }
     }
 
@@ -154,14 +141,11 @@
       var tipoContrato = document.getElementById('tipoContrato').value;
       var salarioBruto = document.getElementById('salario').value;
       var salarioLiquido = document.getElementById('salarioLiquido').value;
-      var dataPagamento = document.getElementById('dataPagamento').value;
+      var numPagamentos = document.getElementById('numPagamentos').value;
+      var dataPagamento1 = document.getElementById('dataPagamento1').value;
+      var dataPagamento2 = document.getElementById('dataPagamento2').value;
 
-      console.log('Nome:', nome);
-      console.log('Parentesco:', parentesco);
-      console.log('Tipo de Contrato:', tipoContrato);
-      console.log('Salário Bruto:', salarioBruto);
-      console.log('Salário Líquido:', salarioLiquido);
-      console.log('Data de Pagamento:', dataPagamento);
+      console.log({ nome, parentesco, tipoContrato, salarioBruto, salarioLiquido, numPagamentos, dataPagamento1, dataPagamento2 });
 
       closeCadastro();
       return false;
