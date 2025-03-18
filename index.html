@@ -14,7 +14,8 @@
     .modal-content { background-color: white; margin: 10% auto; padding: 20px; width: 80%; max-width: 400px; border-radius: 8px; }
     .close { float: right; font-size: 20px; cursor: pointer; }
     .close:hover { color: red; }
-    input, select { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    input, select, label { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .checkbox-group { display: flex; gap: 10px; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
@@ -35,11 +36,10 @@
         <label for="parentesco">Nível de Parentesco:</label>
         <input type="text" id="parentesco" required>
 
-        <label for="tipoContrato">Tipo de Contrato:</label>
-        <select id="tipoContrato" onchange="checkTipoContrato()">
-          <option value="CLT">CLT</option>
-          <option value="PJ">PJ</option>
-        </select>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="tipoCLT" onchange="checkTipoContrato()"> CLT</label>
+          <label><input type="checkbox" id="tipoPJ"> PJ</label>
+        </div>
 
         <div id="salarioBrutoDiv" style="display: none;">
           <label for="salario">Salário Bruto:</label>
@@ -53,23 +53,10 @@
 
         <div id="pagamentosDiv" style="display: none;">
           <label for="numPagamentos">Quantas vezes recebe no mês?</label>
-          <select id="numPagamentos" onchange="gerarCamposPagamento()">
-            <option value="1">1 vez</option>
-            <option value="2">2 vezes</option>
-          </select>
+          <input type="number" id="numPagamentos" min="1" max="6" value="1" onchange="gerarCamposPagamento()">
         </div>
 
-        <div id="diasPagamentoDiv" style="display: none;">
-          <label for="dataPagamento1">Dia de Recebimento:</label>
-          <input type="date" id="dataPagamento1">
-          <div id="parcelaPagamento1"></div>
-
-          <div id="dataPagamento2Div" style="display: none;">
-            <label for="dataPagamento2">Segunda Data de Pagamento:</label>
-            <input type="date" id="dataPagamento2">
-            <div id="parcelaPagamento2"></div>
-          </div>
-        </div>
+        <div id="diasPagamentoDiv" style="display: none;"></div>
 
         <button type="submit">Salvar</button>
       </form>
@@ -86,13 +73,13 @@
     }
 
     function checkTipoContrato() {
-      var tipoContrato = document.getElementById('tipoContrato').value;
+      var cltSelecionado = document.getElementById('tipoCLT').checked;
       var salarioBrutoDiv = document.getElementById('salarioBrutoDiv');
       var salarioLiquidoDiv = document.getElementById('salarioLiquidoDiv');
       var pagamentosDiv = document.getElementById('pagamentosDiv');
       var diasPagamentoDiv = document.getElementById('diasPagamentoDiv');
 
-      if (tipoContrato === 'CLT') {
+      if (cltSelecionado) {
         salarioBrutoDiv.style.display = 'block';
         salarioLiquidoDiv.style.display = 'block';
         pagamentosDiv.style.display = 'block';
@@ -115,22 +102,23 @@
     }
 
     function gerarCamposPagamento() {
-      var numPagamentos = document.getElementById('numPagamentos').value;
+      var numPagamentos = parseInt(document.getElementById('numPagamentos').value);
       var salarioLiquido = parseFloat(document.getElementById('salarioLiquido').value);
-      var dataPagamento2Div = document.getElementById('dataPagamento2Div');
-      var parcelaPagamento1 = document.getElementById('parcelaPagamento1');
-      var parcelaPagamento2 = document.getElementById('parcelaPagamento2');
+      var diasPagamentoDiv = document.getElementById('diasPagamentoDiv');
 
-      if (!isNaN(salarioLiquido)) {
-        if (numPagamentos == 1) {
-          dataPagamento2Div.style.display = 'none';
-          parcelaPagamento1.innerHTML = `Valor recebido: R$ ${salarioLiquido.toFixed(2)}`;
-          parcelaPagamento2.innerHTML = "";
-        } else {
-          dataPagamento2Div.style.display = 'block';
-          var valorParcela = salarioLiquido / 2;
-          parcelaPagamento1.innerHTML = `Valor recebido na 1ª data: R$ ${valorParcela.toFixed(2)}`;
-          parcelaPagamento2.innerHTML = `Valor recebido na 2ª data: R$ ${valorParcela.toFixed(2)}`;
+      diasPagamentoDiv.innerHTML = "";
+
+      if (!isNaN(salarioLiquido) && numPagamentos > 0) {
+        var valorParcela = salarioLiquido / numPagamentos;
+
+        for (var i = 1; i <= numPagamentos; i++) {
+          var div = document.createElement('div');
+          div.innerHTML = `
+            <label for="dataPagamento${i}">Data ${i}:</label>
+            <input type="date" id="dataPagamento${i}" required>
+            <div>Valor recebido: R$ ${valorParcela.toFixed(2)}</div>
+          `;
+          diasPagamentoDiv.appendChild(div);
         }
       }
     }
@@ -138,14 +126,21 @@
     function cadastrarPessoa() {
       var nome = document.getElementById('nome').value;
       var parentesco = document.getElementById('parentesco').value;
-      var tipoContrato = document.getElementById('tipoContrato').value;
+      var tipoCLT = document.getElementById('tipoCLT').checked;
+      var tipoPJ = document.getElementById('tipoPJ').checked;
       var salarioBruto = document.getElementById('salario').value;
       var salarioLiquido = document.getElementById('salarioLiquido').value;
       var numPagamentos = document.getElementById('numPagamentos').value;
-      var dataPagamento1 = document.getElementById('dataPagamento1').value;
-      var dataPagamento2 = document.getElementById('dataPagamento2').value;
+      var datasPagamentos = [];
 
-      console.log({ nome, parentesco, tipoContrato, salarioBruto, salarioLiquido, numPagamentos, dataPagamento1, dataPagamento2 });
+      for (var i = 1; i <= numPagamentos; i++) {
+        var data = document.getElementById(`dataPagamento${i}`).value;
+        if (data) datasPagamentos.push(data);
+      }
+
+      console.log({
+        nome, parentesco, tipoCLT, tipoPJ, salarioBruto, salarioLiquido, numPagamentos, datasPagamentos
+      });
 
       closeCadastro();
       return false;
@@ -154,4 +149,3 @@
 
 </body>
 </html>
-
