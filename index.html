@@ -190,4 +190,107 @@
       return inss;
     }
 
-    // Cálculo simplificado
+    // Cálculo simplificado do IRRF (não considera dependentes ou deduções adicionais)
+    function calcularIRRF(base) {
+      let irrf = 0;
+      if (base <= 1903.98) {
+        irrf = 0;
+      } else if (base <= 2826.65) {
+        irrf = (base * 0.075) - 142.80;
+      } else if (base <= 3751.05) {
+        irrf = (base * 0.15) - 354.80;
+      } else if (base <= 4664.68) {
+        irrf = (base * 0.225) - 636.13;
+      } else {
+        irrf = (base * 0.275) - 869.36;
+      }
+      return irrf < 0 ? 0 : irrf;
+    }
+
+    // Atualiza o salário líquido com base no bruto, INSS e IRRF
+    function atualizarSalarioLiquido() {
+      var salarioBruto = parseFloat(document.getElementById("salarioBruto").value);
+      if (!isNaN(salarioBruto)) {
+        var inss = calcularINSS(salarioBruto);
+        var baseIRRF = salarioBruto - inss;
+        var irrf = calcularIRRF(baseIRRF);
+        var salarioLiquido = salarioBruto - inss - irrf;
+        document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
+        gerarCamposPagamentos(); // Atualiza os campos de pagamento, se já selecionado
+      } else {
+        document.getElementById("salarioLiquido").value = "";
+        document.getElementById("pagamentosContainer").innerHTML = "";
+      }
+    }
+
+    // Gera dinamicamente os campos de data de pagamento conforme o número de pagamentos escolhido (via botões de rádio)
+    function gerarCamposPagamentos() {
+      var radios = document.getElementsByName("numPagamentos");
+      var numPagamentos = 0;
+      for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+          numPagamentos = parseInt(radios[i].value);
+          break;
+        }
+      }
+      var salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value);
+      var container = document.getElementById("pagamentosContainer");
+      container.innerHTML = "";
+      if (numPagamentos > 0 && !isNaN(salarioLiquido)) {
+        var valorParcela = salarioLiquido / numPagamentos;
+        for (var i = 1; i <= numPagamentos; i++) {
+          var div = document.createElement("div");
+          div.className = "pagamento-item";
+          div.innerHTML = `
+            <label for="dataPagamento${i}">Data de Pagamento ${i}:</label>
+            <input type="date" id="dataPagamento${i}" required>
+            <div>Valor para esta data: R$ ${valorParcela.toFixed(2)}</div>
+          `;
+          container.appendChild(div);
+        }
+      }
+    }
+
+    // Função para capturar e exibir os dados do formulário no console
+    function cadastrarPessoa() {
+      var nome = document.getElementById("nome").value;
+      var parentesco = document.getElementById("parentesco").value;
+      var cltSelecionado = document.getElementById("cltCheckbox").checked;
+      var pjSelecionado = document.getElementById("pjCheckbox").checked;
+      
+      var dados = {
+        nome: nome,
+        parentesco: parentesco,
+        clt: cltSelecionado,
+        pj: pjSelecionado
+      };
+      
+      if (cltSelecionado) {
+        var salarioBruto = document.getElementById("salarioBruto").value;
+        var salarioLiquido = document.getElementById("salarioLiquido").value;
+        var numPagamentos = 0;
+        var radios = document.getElementsByName("numPagamentos");
+        for (var i = 0; i < radios.length; i++) {
+          if (radios[i].checked) {
+            numPagamentos = radios[i].value;
+            break;
+          }
+        }
+        dados.salarioBruto = salarioBruto;
+        dados.salarioLiquido = salarioLiquido;
+        dados.numPagamentos = numPagamentos;
+        dados.pagamentos = [];
+        for (var i = 1; i <= parseInt(numPagamentos); i++) {
+          var dataPagamento = document.getElementById("dataPagamento" + i).value;
+          dados.pagamentos.push({ indice: i, data: dataPagamento });
+        }
+      }
+      
+      console.log("Dados cadastrados:", dados);
+      closeCadastro();
+      return false; // Impede o envio tradicional do formulário
+    }
+  </script>
+
+</body>
+</html>
