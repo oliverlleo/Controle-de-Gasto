@@ -5,22 +5,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Pessoa</title>
   <style>
-    * { font-family: Arial, sans-serif; box-sizing: border-box; }
-    body { text-align: center; background-color: #f4f4f4; padding: 20px; }
-    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    button { background: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
-    button:hover { background: #0056b3; }
-    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-    .modal-content { background-color: white; margin: 5% auto; padding: 20px; width: 90%; max-width: 400px; border-radius: 8px; }
-    .close { float: right; font-size: 20px; cursor: pointer; }
-    .close:hover { color: red; }
-    input, select, label { 
-      width: 100%; 
-      padding: 8px; 
-      margin-top: 5px; 
-      margin-bottom: 10px; 
-      border: 1px solid #ccc; 
-      border-radius: 4px; 
+    * {
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    body {
+      text-align: center;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 8px;
+    }
+    .close {
+      float: right;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: red;
+    }
+    input, select, label {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
     .checkbox-group {
       display: flex;
@@ -64,25 +109,25 @@
 
         <div class="checkbox-group">
           <label>
-            <input type="checkbox" id="tipoCLT" onchange="checkTipoContrato()">
+            <input type="checkbox" id="cltCheckbox" onchange="toggleCLTFields()">
             CLT
           </label>
           <label>
-            <input type="checkbox" id="tipoPJ">
+            <input type="checkbox" id="pjCheckbox">
             PJ
           </label>
         </div>
 
-        <!-- Campos referentes a CLT -->
-        <div id="cltFields" style="display: none;">
-          <label for="salario">Salário Bruto (R$):</label>
-          <input type="number" id="salario" step="0.01" oninput="calcularSalarioLiquido()" placeholder="Digite o salário bruto">
+        <!-- Campos referentes à CLT -->
+        <div id="cltFields" style="display:none;">
+          <label for="salarioBruto">Salário Bruto (R$):</label>
+          <input type="number" id="salarioBruto" step="0.01" oninput="atualizarSalarioLiquido()" placeholder="Digite o salário bruto">
 
-          <label for="salarioLiquido">Salário Líquido (80% do bruto):</label>
+          <label for="salarioLiquido">Salário Líquido (após INSS):</label>
           <input type="number" id="salarioLiquido" step="0.01" readonly>
 
-          <label for="numPagamentos">Quantas vezes recebe no mês?</label>
-          <select id="numPagamentos" onchange="gerarCamposPagamento()">
+          <label for="numPagamentos">Número de Pagamentos no Mês:</label>
+          <select id="numPagamentos" onchange="gerarCamposPagamentos()">
             <option value="">Selecione</option>
             <option value="1">1 vez</option>
             <option value="2">2 vezes</option>
@@ -92,8 +137,8 @@
             <option value="6">6 vezes</option>
           </select>
 
-          <!-- Container para os campos de data de pagamento -->
-          <div id="diasPagamentoDiv"></div>
+          <!-- Container para os campos de datas de pagamento -->
+          <div id="pagamentosContainer"></div>
         </div>
         <!-- Fim dos campos CLT -->
 
@@ -105,61 +150,79 @@
   <script>
     // Abre o modal de cadastro
     function openCadastro() {
-      document.getElementById('cadastroModal').style.display = 'block';
+      document.getElementById("cadastroModal").style.display = "block";
     }
 
-    // Fecha o modal de cadastro
+    // Fecha o modal e reseta o formulário
     function closeCadastro() {
-      document.getElementById('cadastroModal').style.display = 'none';
+      document.getElementById("cadastroModal").style.display = "none";
       resetForm();
     }
 
-    // Reinicia os campos do formulário (opcional)
     function resetForm() {
-      document.getElementById('cadastroForm').reset();
-      document.getElementById('cltFields').style.display = 'none';
-      document.getElementById('diasPagamentoDiv').innerHTML = '';
+      document.getElementById("cadastroForm").reset();
+      document.getElementById("cltFields").style.display = "none";
+      document.getElementById("pagamentosContainer").innerHTML = "";
     }
 
-    // Exibe ou oculta os campos de CLT conforme o checkbox
-    function checkTipoContrato() {
-      var cltSelecionado = document.getElementById('tipoCLT').checked;
-      var cltFields = document.getElementById('cltFields');
-      if (cltSelecionado) {
-        cltFields.style.display = 'block';
+    // Mostra ou oculta os campos de CLT conforme o checkbox
+    function toggleCLTFields() {
+      var cltChecked = document.getElementById("cltCheckbox").checked;
+      var cltFields = document.getElementById("cltFields");
+      if (cltChecked) {
+        cltFields.style.display = "block";
       } else {
-        cltFields.style.display = 'none';
-        document.getElementById('diasPagamentoDiv').innerHTML = '';
+        cltFields.style.display = "none";
+        document.getElementById("pagamentosContainer").innerHTML = "";
       }
     }
 
-    // Calcula o salário líquido (80% do bruto) e atualiza o campo correspondente
-    function calcularSalarioLiquido() {
-      var salarioBruto = parseFloat(document.getElementById('salario').value);
+    // Cálculo do INSS baseado nas faixas progressivas (valores exemplificados)
+    function calcularINSS(salarioBruto) {
+      let inss = 0;
+      if (salarioBruto <= 1100.00) {
+        inss = salarioBruto * 0.075;
+      } else if (salarioBruto <= 2203.48) {
+        inss = (1100.00 * 0.075) + ((salarioBruto - 1100.00) * 0.09);
+      } else if (salarioBruto <= 3305.22) {
+        inss = (1100.00 * 0.075) + ((2203.48 - 1100.00) * 0.09) + ((salarioBruto - 2203.48) * 0.12);
+      } else if (salarioBruto <= 6433.57) {
+        inss = (1100.00 * 0.075) + ((2203.48 - 1100.00) * 0.09) + ((3305.22 - 2203.48) * 0.12) + ((salarioBruto - 3305.22) * 0.14);
+      } else {
+        // Teto máximo do INSS
+        inss = (1100.00 * 0.075) + ((2203.48 - 1100.00) * 0.09) + ((3305.22 - 2203.48) * 0.12) + ((6433.57 - 3305.22) * 0.14);
+      }
+      return inss;
+    }
+
+    // Atualiza o campo de salário líquido com base no bruto e no INSS
+    function atualizarSalarioLiquido() {
+      var salarioBruto = parseFloat(document.getElementById("salarioBruto").value);
       if (!isNaN(salarioBruto)) {
-        var salarioLiquido = salarioBruto * 0.8;
-        document.getElementById('salarioLiquido').value = salarioLiquido.toFixed(2);
-        gerarCamposPagamento();
+        var inss = calcularINSS(salarioBruto);
+        var salarioLiquido = salarioBruto - inss;
+        document.getElementById("salarioLiquido").value = salarioLiquido.toFixed(2);
+        gerarCamposPagamentos(); // Atualiza os campos de pagamentos, se houver
       } else {
-        document.getElementById('salarioLiquido').value = '';
-        document.getElementById('diasPagamentoDiv').innerHTML = '';
+        document.getElementById("salarioLiquido").value = "";
+        document.getElementById("pagamentosContainer").innerHTML = "";
       }
     }
 
-    // Gera os campos para inserir datas de pagamento de acordo com a quantidade selecionada
-    function gerarCamposPagamento() {
-      var numPagamentos = parseInt(document.getElementById('numPagamentos').value);
-      var salarioLiquido = parseFloat(document.getElementById('salarioLiquido').value);
-      var container = document.getElementById('diasPagamentoDiv');
-      container.innerHTML = '';
-
+    // Gera dinamicamente os campos para inserir as datas de pagamento conforme o número escolhido
+    function gerarCamposPagamentos() {
+      var numPagamentos = parseInt(document.getElementById("numPagamentos").value);
+      var salarioLiquido = parseFloat(document.getElementById("salarioLiquido").value);
+      var container = document.getElementById("pagamentosContainer");
+      container.innerHTML = "";
+      
       if (!isNaN(numPagamentos) && numPagamentos > 0 && !isNaN(salarioLiquido)) {
         var valorParcela = salarioLiquido / numPagamentos;
         for (var i = 1; i <= numPagamentos; i++) {
-          var div = document.createElement('div');
+          var div = document.createElement("div");
           div.className = "pagamento-item";
           div.innerHTML = `
-            <label for="dataPagamento${i}">Data de pagamento ${i}:</label>
+            <label for="dataPagamento${i}">Data de Pagamento ${i}:</label>
             <input type="date" id="dataPagamento${i}" required>
             <div>Valor para esta data: R$ ${valorParcela.toFixed(2)}</div>
           `;
@@ -168,32 +231,34 @@
       }
     }
 
-    // Função para capturar os dados do cadastro e exibi-los no console
+    // Função para capturar os dados do formulário e exibi-los no console
     function cadastrarPessoa() {
-      var nome = document.getElementById('nome').value;
-      var parentesco = document.getElementById('parentesco').value;
-      var tipoCLT = document.getElementById('tipoCLT').checked;
-      var tipoPJ = document.getElementById('tipoPJ').checked;
-
+      var nome = document.getElementById("nome").value;
+      var parentesco = document.getElementById("parentesco").value;
+      var cltSelecionado = document.getElementById("cltCheckbox").checked;
+      var pjSelecionado = document.getElementById("pjCheckbox").checked;
+      
       var dados = {
-        nome,
-        parentesco,
-        tipoCLT,
-        tipoPJ
+        nome: nome,
+        parentesco: parentesco,
+        clt: cltSelecionado,
+        pj: pjSelecionado
       };
-
-      if (tipoCLT) {
-        dados.salarioBruto = document.getElementById('salario').value;
-        dados.salarioLiquido = document.getElementById('salarioLiquido').value;
-        dados.numPagamentos = document.getElementById('numPagamentos').value;
+      
+      if (cltSelecionado) {
+        var salarioBruto = document.getElementById("salarioBruto").value;
+        var salarioLiquido = document.getElementById("salarioLiquido").value;
+        var numPagamentos = document.getElementById("numPagamentos").value;
+        dados.salarioBruto = salarioBruto;
+        dados.salarioLiquido = salarioLiquido;
+        dados.numPagamentos = numPagamentos;
         dados.pagamentos = [];
-        var numPagamentos = parseInt(dados.numPagamentos);
-        for (var i = 1; i <= numPagamentos; i++) {
-          var data = document.getElementById(`dataPagamento${i}`).value;
-          dados.pagamentos.push({ indice: i, data: data });
+        for (var i = 1; i <= parseInt(numPagamentos); i++) {
+          var dataPagamento = document.getElementById("dataPagamento" + i).value;
+          dados.pagamentos.push({ indice: i, data: dataPagamento });
         }
       }
-
+      
       console.log("Dados cadastrados:", dados);
       closeCadastro();
       return false; // Evita o envio do formulário
